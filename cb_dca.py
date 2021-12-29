@@ -1,13 +1,20 @@
 import cbpro
 import pprint 
-from settings import *
 import datetime
 import time
+import sys
 
-auth_client = cbpro.AuthenticatedClient(SANDBOX_API_SECRET,
-                                       SANDBOX_B64SECRET,
-                                        SANDBOX_PASSPHRASE,
-					api_url="https://api-public.sandbox.pro.coinbase.com")
+
+if len(sys.argv) > 1:
+	if sys.argv[1] == "-r":
+		from settings import *
+else:
+	from sandbox_settings import *
+
+auth_client = cbpro.AuthenticatedClient(API_SECRET,
+					B64SECRET,
+                                        PASSPHRASE,
+                                        api_url=API_URL)
 
 
 def log(record):
@@ -19,16 +26,16 @@ def log(record):
 	f.write('\n')
 	f.close()
 
+
 if __name__ == '__main__':
-	market_list = ["BTC-EUR", "ETC-EUR", "USDT-EUR", "ADA-EUR", "SOL-EUR"]
 	while True :
 		currDate = datetime.datetime.now()
 		day = int(currDate.strftime("%d"))
-		if day == 27:
-			for market in market_list:
-				order = auth_client.buy(funds='40.00',
-					order_type='market',
-					product_id=market)
+		if day == INVESTMENT_DAY:
+			for market in MARKET_LIST:
+				order = auth_client.buy(funds=FUNDS,
+							order_type='market',
+							product_id=market)
 				log(order)  
-			print('Bot is locked for 90000 seconds')
-			time.sleep(10)
+			print('Bot is locked for {} seconds'.format(SLEEP_TIME))
+			time.sleep(SLEEP_TIME)

@@ -1,0 +1,4 @@
+venv/
+__pycache__
+settings.py
+sandbox_settings.py
