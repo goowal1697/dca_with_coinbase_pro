@@ -1,7 +1,0 @@
-.gitignore
-venv/
-__pycache__
-settings.py
-sandbox_settings.py
-sandbox_app.log
-app.log
