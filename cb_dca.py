@@ -3,6 +3,8 @@ import pprint
 import datetime
 import time
 import sys
+import logging
+from timeit import default_timer
 
 
 if len(sys.argv) > 1:
@@ -11,31 +13,45 @@ if len(sys.argv) > 1:
 else:
 	from sandbox_settings import *
 
-auth_client = cbpro.AuthenticatedClient(API_SECRET,
-					B64SECRET,
-                                        PASSPHRASE,
-                                        api_url=API_URL)
+logging.basicConfig(filename=LOG_FILE, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level=logging.INFO)
+logging.warning("{} mode.".format(MODE))
 
-
-def log(record):
-	f = open("logs.txt", "a")
-	date = datetime.datetime.now()
-	f.write('################### Trade of {} ################### \n'.format(date))
-	for key, value in record.items():
-		f.write('%s:%s\n' % (key, value))
-	f.write('\n')
-	f.close()
+# Log connection errors
+try:
+	auth_client = cbpro.AuthenticatedClient(API_SECRET, B64SECRET, PASSPHRASE, api_url=API_URL)
+except:
+	logging.error('Connection failed.')
+	sys.exit()
 
 
 if __name__ == '__main__':
+	logging.info('DCA process is now active.')
 	while True :
 		currDate = datetime.datetime.now()
 		day = int(currDate.strftime("%d"))
 		if day == INVESTMENT_DAY:
+			logging.info('Today is investment day.')
 			for market in MARKET_LIST:
 				order = auth_client.buy(funds=FUNDS,
 							order_type='market',
 							product_id=market)
-				log(order)  
-			print('Bot is locked for {} seconds'.format(SLEEP_TIME))
+				logging.info("Buy order sent.") 
+				start = default_timer()
+				
+				# Wait for the order to be filled
+				while order['status'] != "done":
+					order = auth_client.get_order(order['id'])
+					time.sleep(1)
+					duration = default_timer() - start
+					
+					# Prevent blocked order
+					if duration >= 15:
+						logging.error("Order not filled.")
+						auth_client.cancel_order(order['id'])
+						break
+
+				logging.info("{} order filled. {} BTC bought for {} €".format(order['product_id'], 
+												order['filled_size'], 
+												order['funds']))
+
 			time.sleep(SLEEP_TIME)

@@ -1,0 +1,81 @@
+#!/bin/bash 
+
+apt install python3
+apt install python3-pip
+
+echo "Python3 and Pip3 installed"
+
+pip3 install -r requirements.txt
+echo "Requirements installed" 
+
+echo "Settings setup..."
+
+read -p "Installation Test ? (Y/N): " test
+echo
+echo "Enter your B64SECRET: "
+echo "(e.g. QFfj6UZWULYrR7cNysR+KxjT8WxaP4knr5df28YSyyCiBMIiMQEg9rOlQ778/VABSrsxSNlqKs1i8Go8sng9TQ==)"
+read b64
+echo
+echo "Enter your PASSPHRASE: "
+echo "(e.g. dd55f9Ambdr)"
+read pp
+echo
+echo "Enter your API_SECRET: "
+echo "(e.g. 58d33088z6cee77z5c2b65e9c6dz55ef)"
+read apis
+echo
+echo "Enter the market you want to invest in :"
+echo "(Please respect the following format : 'BTC-EUR','BTC-USD')"
+read ml
+echo
+echo "How many do you want to invest monthly? : "
+echo "(e.g. 100.00)"
+read funds
+echo
+echo "What day of the month? : "
+echo "(e.g. 10)"
+read day
+read -p "Do you want to make the process start at boot? (Y/N): " boot
+
+
+if [ $test = 'Y' ]; then
+	file=sandbox_settings.py
+	rc_loc=/etc/rc.local2
+	touch $file
+	echo "MODE = 'Sandbox'" >> $file
+	echo "API_URL = 'https://api-public.sandbox.pro.coinbase.com'" >> $file
+	echo "SLEEP_TIME = 90000" >> $file
+	echo "LOG_FILE = 'sandbox_app.log'" >> $file
+else
+	echo "Installation file not ready."
+	kill $(ps aux | grep install | grep -v grep | awk '{ print $2 }')
+fi
+
+if [ $boot = 'Y' ]; then
+path=`pwd`
+touch $rc_loc
+cat > $rc_loc << EOL
+#!/bin/bash
+#
+# This script will be executed *after* all the other init scripts.
+# You can put your own initialization stuff in here if you don't
+# want to do the full Sys V style init stuff.
+#
+# Run DCA script
+
+python3 $path/cb_dca.py
+
+exit 0
+
+EOL
+chmod +x $rc_loc
+fi
+
+echo "B64SECRET = '$b64'" >> $file
+echo "PASSPHRASE = '$pp'" >> $file
+echo "API_SECRET = '$apis'" >> $file
+echo "MARKET_LIST = [$ml]" >> $file
+echo "FUNDS = '$funds'" >> $file
+echo "INVESTMENT_DAY = $day" >> $file
+
+echo "Installation successfully completed."
